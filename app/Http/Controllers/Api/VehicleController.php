@@ -4,18 +4,21 @@ namespace App\Http\Controllers\Api;
 
 use App\Models\Vehicle;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Gate;
 
 class VehicleController
 {
     public function index()
     {
         return response()->json([
-            'vehicles' => Vehicle::all(),
+            'vehicles' => Vehicle::where('is_active', true)->get(),
         ]);
     }
 
     public function store(Request $request)
     {
+        Gate::authorize('create', Vehicle::class);
+
         $validated = $request->validate([
             'name' => 'required|string',
             'plate_number' => 'nullable|string',
@@ -26,7 +29,7 @@ class VehicleController
         $vehicle = Vehicle::create($validated);
 
         return response()->json([
-            'message' => 'Vehicle created',
+            'message' => 'Kendaraan berhasil ditambahkan',
             'vehicle' => $vehicle,
         ], 201);
     }
@@ -40,6 +43,8 @@ class VehicleController
 
     public function update(Request $request, Vehicle $vehicle)
     {
+        Gate::authorize('update', $vehicle);
+
         $validated = $request->validate([
             'name' => 'string',
             'plate_number' => 'nullable|string',
@@ -50,17 +55,19 @@ class VehicleController
         $vehicle->update($validated);
 
         return response()->json([
-            'message' => 'Vehicle updated',
+            'message' => 'Kendaraan berhasil diperbarui',
             'vehicle' => $vehicle,
         ]);
     }
 
     public function destroy(Vehicle $vehicle)
     {
+        Gate::authorize('delete', $vehicle);
+
         $vehicle->delete();
 
         return response()->json([
-            'message' => 'Vehicle deleted',
+            'message' => 'Kendaraan berhasil dihapus',
         ]);
     }
 }

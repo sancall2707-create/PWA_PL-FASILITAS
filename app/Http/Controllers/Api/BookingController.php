@@ -4,20 +4,30 @@ namespace App\Http\Controllers\Api;
 
 use App\Models\Booking;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Gate;
 
 class BookingController
 {
-    public function index()
+    public function index(Request $request)
     {
-        $bookings = Booking::with(['user', 'category', 'bookable'])->get();
+        $user = $request->user();
+
+        // Admin lihat semua booking, User biasa hanya lihat booking miliknya sendiri
+        $query = Booking::with(['user', 'category', 'bookable']);
+
+        if (!$user->isAdmin()) {
+            $query->where('user_id', $user->id);
+        }
 
         return response()->json([
-            'bookings' => $bookings,
+            'bookings' => $query->orderBy('created_at', 'desc')->get(),
         ]);
     }
 
     public function store(Request $request)
     {
+        Gate::authorize('create', Booking::class);
+
         $validated = $request->validate([
             'category_id' => 'required|exists:categories,id',
             'bookable_type' => 'required|in:App\\Models\\Vehicle,App\\Models\\Facility',
@@ -42,13 +52,15 @@ class BookingController
         $booking = Booking::create($validated);
 
         return response()->json([
-            'message' => 'Booking created',
+            'message' => 'Peminjaman berhasil dibuat',
             'booking' => $booking->load(['user', 'category', 'bookable']),
         ], 201);
     }
 
     public function show(Booking $booking)
     {
+        Gate::authorize('view', $booking);
+
         return response()->json([
             'booking' => $booking->load(['user', 'category', 'bookable']),
         ]);
@@ -56,12 +68,7 @@ class BookingController
 
     public function update(Request $request, Booking $booking)
     {
-        // Only allow owner or admin to update
-        if ($request->user()->id !== $booking->user_id && !$request->user()->isAdmin()) {
-            return response()->json([
-                'message' => 'Unauthorized',
-            ], 403);
-        }
+        Gate::authorize('update', $booking);
 
         $validated = $request->validate([
             'driver' => 'nullable|string',
@@ -83,19 +90,14 @@ class BookingController
         $booking->update($validated);
 
         return response()->json([
-            'message' => 'Booking updated',
+            'message' => 'Peminjaman berhasil diperbarui',
             'booking' => $booking->load(['user', 'category', 'bookable']),
         ]);
     }
 
     public function updateStatus(Request $request, Booking $booking)
     {
-        // Only admin can update status
-        if (!$request->user()->isAdmin()) {
-            return response()->json([
-                'message' => 'Unauthorized',
-            ], 403);
-        }
+        Gate::authorize('updateStatus', $booking);
 
         $validated = $request->validate([
             'status' => 'required|in:pending,approved,rejected,completed',
@@ -104,24 +106,19 @@ class BookingController
         $booking->update($validated);
 
         return response()->json([
-            'message' => 'Booking status updated',
+            'message' => 'Status peminjaman berhasil diperbarui',
             'booking' => $booking->load(['user', 'category', 'bookable']),
         ]);
     }
 
-    public function destroy(Request $request, Booking $booking)
+    public function destroy(Booking $booking)
     {
-        // Only allow owner or admin to delete
-        if ($request->user()->id !== $booking->user_id && !$request->user()->isAdmin()) {
-            return response()->json([
-                'message' => 'Unauthorized',
-            ], 403);
-        }
+        Gate::authorize('delete', $booking);
 
         $booking->delete();
 
         return response()->json([
-            'message' => 'Booking deleted',
+            'message' => 'Peminjaman berhasil dihapus',
         ]);
     }
 }
