@@ -3,11 +3,19 @@
 namespace App\Http\Controllers\Api;
 
 use App\Models\Booking;
+use App\Services\BookingConflictService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Gate;
 
 class BookingController
 {
+    protected BookingConflictService $conflictService;
+
+    public function __construct(BookingConflictService $conflictService)
+    {
+        $this->conflictService = $conflictService;
+    }
+
     public function index(Request $request)
     {
         $user = $request->user();
@@ -48,12 +56,24 @@ class BookingController
             'contact_info' => 'nullable|string',
         ]);
 
+        // CEK KONFLIK SAAT PENGAJUAN
+        $conflictCheck = $this->conflictService->checkConflict(
+            $validated['bookable_id'],
+            $validated['bookable_type'],
+            $validated['date_from'],
+            $validated['date_to'],
+            $validated['time_from'],
+            $validated['time_to']
+        );
+
         $validated['user_id'] = $request->user()->id;
         $booking = Booking::create($validated);
 
         return response()->json([
             'message' => 'Peminjaman berhasil dibuat',
             'booking' => $booking->load(['user', 'category', 'bookable']),
+            'has_conflict' => $conflictCheck['hasConflict'],
+            'conflict_warning' => $conflictCheck['hasConflict'] ? $conflictCheck['message'] : null,
         ], 201);
     }
 
@@ -102,6 +122,28 @@ class BookingController
         $validated = $request->validate([
             'status' => 'required|in:pending,approved,rejected,completed',
         ]);
+
+        // JIKA AKAN DISETUJUI (status = approved), CEK ATURAN BENTROK TERLEBIH DAHULU!
+        if ($validated['status'] === 'approved') {
+            $conflictCheck = $this->conflictService->checkConflict(
+                $booking->bookable_id,
+                $booking->bookable_type,
+                $booking->date_from->format('Y-m-d'),
+                $booking->date_to->format('Y-m-d'),
+                $booking->time_from ? $booking->time_from->format('H:i') : '00:00',
+                $booking->time_to ? $booking->time_to->format('H:i') : '23:59',
+                $booking->id
+            );
+
+            // JIKA TERJADI BENTROK, BLOKIR PERSETUJUAN!
+            if ($conflictCheck['hasConflict']) {
+                return response()->json([
+                    'message' => 'Gagal menyetujui peminjaman: Terjadi bentrok jadwal.',
+                    'conflict_detail' => $conflictCheck['message'],
+                    'conflicts' => $conflictCheck['conflicts'],
+                ], 422);
+            }
+        }
 
         $booking->update($validated);
 
