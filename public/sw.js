@@ -1,56 +1,78 @@
-const CACHE_NAME = 'pwa-peminjaman-v1';
-const urlsToCache = [
+const CACHE_NAME = 'pwa-peminjaman-v2';
+
+// Hanya cache aset statis publik yang aman
+const PUBLIC_ASSETS = [
   '/',
-  '/index.html',
-  '/favicon.ico',
   '/manifest.json',
+  '/favicon.ico',
 ];
 
-// Install event - cache assets
+// Install Event: Pre-cache static assets
 self.addEventListener('install', (event) => {
   event.waitUntil(
     caches.open(CACHE_NAME).then((cache) => {
-      return cache.addAll(urlsToCache);
-    })
+      return cache.addAll(PUBLIC_ASSETS);
+    }).then(() => self.skipWaiting())
   );
-  self.skipWaiting();
 });
 
-// Activate event - clean up old caches
+// Activate Event: Clean old caches
 self.addEventListener('activate', (event) => {
   event.waitUntil(
     caches.keys().then((cacheNames) => {
       return Promise.all(
-        cacheNames.map((cacheName) => {
-          if (cacheName !== CACHE_NAME) {
-            return caches.delete(cacheName);
+        cacheNames.map((cache) => {
+          if (cache !== CACHE_NAME) {
+            return caches.delete(cache);
           }
         })
       );
-    })
+    }).then(() => self.clients.claim())
   );
-  self.clients.claim();
 });
 
-// Fetch event - serve from cache, fallback to network
+// Fetch Event: Network-first for API & Sensitive Routes, Cache-first for Static Assets
 self.addEventListener('fetch', (event) => {
-  // Skip API calls - always fetch from network
-  if (event.request.url.includes('/api/')) {
+  const url = new URL(event.request.url);
+
+  // SECURITY RULE: JANGAN MENG-CACHE RESPONS API ATAU ROUTE SENSITIF!
+  if (
+    url.pathname.startsWith('/api/') ||
+    url.pathname.includes('login') ||
+    url.pathname.includes('register') ||
+    url.pathname.includes('booking') ||
+    url.pathname.includes('admin') ||
+    event.request.method !== 'GET'
+  ) {
+    // Selalu ambil dari jaringan (Network Only) untuk API & Data Sensitif
+    event.respondWith(fetch(event.request));
     return;
   }
 
+  // Untuk Aset Statis Publik (.js, .css, images, manifest) -> Cache First dengan Network Fallback
   event.respondWith(
-    caches.match(event.request).then((response) => {
-      return response || fetch(event.request).then((response) => {
-        // Clone the response
-        const responseToCache = response.clone();
-        caches.open(CACHE_NAME).then((cache) => {
-          cache.put(event.request, responseToCache);
-        });
-        return response;
-      }).catch(() => {
-        // Return offline fallback if available
-        return caches.match('/index.html');
+    caches.match(event.request).then((cachedResponse) => {
+      if (cachedResponse) {
+        return cachedResponse;
+      }
+      return fetch(event.request).then((networkResponse) => {
+        // Hanya cache respons 200 OK untuk aset statis
+        if (
+          networkResponse &&
+          networkResponse.status === 200 &&
+          (url.pathname.endsWith('.js') ||
+           url.pathname.endsWith('.css') ||
+           url.pathname.endsWith('.png') ||
+           url.pathname.endsWith('.jpg') ||
+           url.pathname.endsWith('.svg') ||
+           url.pathname.endsWith('.ico'))
+        ) {
+          const responseToCache = networkResponse.clone();
+          caches.open(CACHE_NAME).then((cache) => {
+            cache.put(event.request, responseToCache);
+          });
+        }
+        return networkResponse;
       });
     })
   );

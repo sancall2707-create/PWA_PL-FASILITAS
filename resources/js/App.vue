@@ -79,12 +79,16 @@
     <template v-else>
       <router-view />
     </template>
+
+    <!-- Floating PWA Install Button -->
+    <InstallPwaButton />
   </div>
 </template>
 
 <script setup>
 import { useAuthStore } from './stores/auth.js'
 import { useRouter } from 'vue-router'
+import InstallPwaButton from './components/InstallPwaButton.vue'
 
 const authStore = useAuthStore()
 const router = useRouter()

@@ -1,16 +1,67 @@
 {
   "name": "Peminjaman Fasilitas PL Deltamas",
   "short_name": "PL Deltamas",
-  "description": "Aplikasi PWA Peminjaman Kendaraan dan Fasilitas Tempat Sekolah Pangudi Luhur Deltamas",
+  "description": "Aplikasi PWA Peminjaman Kendaraan dan Fasilitas Tempat Sekolah Pangudi Luhur Deltamas dengan approval flow, conflict detection, dan offline support.",
   "start_url": "/",
+  "scope": "/",
   "display": "standalone",
-  "background_color": "#1e40af",
+  "orientation": "portrait-primary",
+  "background_color": "#ffffff",
   "theme_color": "#1e40af",
+  "categories": ["productivity", "utilities"],
+  "screenshots": [
+    {
+      "src": "/icons/icon-512.svg",
+      "sizes": "512x512",
+      "type": "image/svg+xml",
+      "form_factor": "wide"
+    },
+    {
+      "src": "/icons/icon-512.svg",
+      "sizes": "512x512",
+      "type": "image/svg+xml",
+      "form_factor": "narrow"
+    }
+  ],
   "icons": [
     {
-      "src": "/favicon.ico",
-      "sizes": "64x64 32x32 24x24 16x16",
-      "type": "image/x-icon"
+      "src": "/icons/icon-512.svg",
+      "sizes": "512x512",
+      "type": "image/svg+xml",
+      "purpose": "any"
+    },
+    {
+      "src": "/icons/icon-512.svg",
+      "sizes": "512x512",
+      "type": "image/svg+xml",
+      "purpose": "maskable"
     }
-  ]
+  ],
+  "shortcuts": [
+    {
+      "name": "Pengajuan Peminjaman",
+      "short_name": "Ajukan",
+      "description": "Buat pengajuan peminjaman kendaraan atau fasilitas",
+      "url": "/booking/new",
+      "icons": [
+        {
+          "src": "/icons/icon-512.svg",
+          "sizes": "512x512"
+        }
+      ]
+    },
+    {
+      "name": "Riwayat Peminjaman",
+      "short_name": "Riwayat",
+      "description": "Lihat riwayat pengajuan Anda",
+      "url": "/bookings",
+      "icons": [
+        {
+          "src": "/icons/icon-512.svg",
+          "sizes": "512x512"
+        }
+      ]
+    }
+  ],
+  "prefer_related_applications": false
 }
