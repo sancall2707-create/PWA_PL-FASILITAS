@@ -8,19 +8,21 @@ import Vehicles from '../pages/Vehicles.vue'
 import Facilities from '../pages/Facilities.vue'
 import BookingForm from '../pages/BookingForm.vue'
 import BookingHistory from '../pages/BookingHistory.vue'
+import AdminDashboard from '../pages/AdminDashboard.vue'
+import UnitAdminDashboard from '../pages/UnitAdminDashboard.vue'
 
 const routes = [
   {
     path: '/login',
     name: 'Login',
     component: Login,
-    meta: { requiresGuest: true },
+    meta: { guest: true },
   },
   {
     path: '/register',
     name: 'Register',
     component: Register,
-    meta: { requiresGuest: true },
+    meta: { guest: true },
   },
   {
     path: '/',
@@ -53,6 +55,18 @@ const routes = [
     meta: { requiresAuth: true },
   },
   {
+    path: '/admin',
+    name: 'AdminDashboard',
+    component: AdminDashboard,
+    meta: { requiresAuth: true, requiresAdmin: true },
+  },
+  {
+    path: '/admin/unit',
+    name: 'UnitAdminDashboard',
+    component: UnitAdminDashboard,
+    meta: { requiresAuth: true, requiresAdmin: true },
+  },
+  {
     path: '/:pathMatch(.*)*',
     redirect: '/',
   },
@@ -66,13 +80,30 @@ const router = createRouter({
 router.beforeEach((to, from, next) => {
   const authStore = useAuthStore()
 
+  // Check if route requires authentication
   if (to.meta.requiresAuth && !authStore.isAuthenticated) {
-    next('/login')
-  } else if (to.meta.requiresGuest && authStore.isAuthenticated) {
-    next('/')
-  } else {
-    next()
+    next({ name: 'Login' })
+    return
   }
+
+  // Check if route requires admin
+  if (to.meta.requiresAdmin && !authStore.isAdmin) {
+    next({ name: 'Dashboard' })
+    return
+  }
+
+  // Redirect logged-in users away from guest pages
+  if (to.meta.guest && authStore.isAuthenticated) {
+    // Redirect admin to admin dashboard
+    if (authStore.isAdmin) {
+      next({ name: 'AdminDashboard' })
+    } else {
+      next({ name: 'Dashboard' })
+    }
+    return
+  }
+
+  next()
 })
 
 export default router

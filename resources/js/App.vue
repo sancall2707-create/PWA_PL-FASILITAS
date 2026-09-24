@@ -1,73 +1,84 @@
 <template>
   <div class="min-h-screen bg-gray-100 flex flex-col">
-    <!-- Navigation Bar -->
-    <header v-if="authStore.isAuthenticated" class="bg-blue-800 text-white shadow-md">
-      <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div class="flex items-center justify-between h-16">
-          <!-- Logo & Title -->
-          <router-link to="/" class="flex items-center space-x-3">
-            <div class="w-10 h-10 bg-yellow-400 rounded-full flex items-center justify-center font-bold text-blue-900 border-2 border-white">
-              PL
+    <!-- Navigation Bar & Main Content (Authenticated) -->
+    <template v-if="authStore.isAuthenticated">
+      <header class="bg-blue-800 text-white shadow-md sticky top-0 z-50">
+        <div class="max-w-7xl mx-auto px-4 py-3 flex items-center justify-between gap-4 flex-wrap">
+          <!-- Logo & Branding -->
+          <div class="flex items-center gap-2 cursor-pointer" @click="$router.push('/')">
+            <span class="text-2xl">🏢</span>
+            <div class="hidden sm:block">
+              <p class="font-bold text-sm">PL Deltamas</p>
+              <p class="text-xs text-blue-200">Peminjaman Fasilitas</p>
             </div>
-            <div>
-              <h1 class="font-bold text-lg leading-tight">Pangudi Luhur Deltamas</h1>
-              <p class="text-xs text-blue-200">Peminjaman Fasilitas PL Deltamas</p>
-            </div>
-          </router-link>
+          </div>
 
-          <!-- Navigation Links -->
-          <nav class="hidden md:flex space-x-4 items-center">
-            <router-link to="/" class="px-3 py-2 rounded-md text-sm font-medium hover:bg-blue-700" active-class="bg-blue-900">Beranda</router-link>
-            <router-link to="/vehicles" class="px-3 py-2 rounded-md text-sm font-medium hover:bg-blue-700" active-class="bg-blue-900">Kendaraan</router-link>
-            <router-link to="/facilities" class="px-3 py-2 rounded-md text-sm font-medium hover:bg-blue-700" active-class="bg-blue-900">Ruangan & Lapangan</router-link>
-            <router-link to="/bookings" class="px-3 py-2 rounded-md text-sm font-medium hover:bg-blue-700" active-class="bg-blue-900">Riwayat Pengajuan</router-link>
+          <!-- Main Navigation Links -->
+          <nav class="flex items-center gap-2 sm:gap-4 flex-wrap">
+            <router-link to="/" class="px-3 py-2 rounded-lg text-sm font-semibold transition hover:bg-blue-700">
+              📊 Beranda
+            </router-link>
+            <router-link to="/vehicles" class="px-3 py-2 rounded-lg text-sm font-semibold transition hover:bg-blue-700">
+              🚗 Kendaraan
+            </router-link>
+            <router-link to="/facilities" class="px-3 py-2 rounded-lg text-sm font-semibold transition hover:bg-blue-700">
+              🏛️ Fasilitas
+            </router-link>
+            <router-link to="/bookings" class="px-3 py-2 rounded-lg text-sm font-semibold transition hover:bg-blue-700">
+              📋 Riwayat
+            </router-link>
+
+            <!-- Admin Links -->
+            <div v-if="authStore.isAdmin" class="hidden md:flex items-center gap-2 border-l border-blue-600 pl-4 ml-2">
+              <router-link to="/admin" class="px-3 py-2 rounded-lg text-sm font-bold bg-yellow-500 text-blue-900 hover:bg-yellow-400 transition">
+                👑 Super Admin
+              </router-link>
+              <router-link to="/admin/unit" class="px-3 py-2 rounded-lg text-sm font-bold bg-green-500 text-white hover:bg-green-600 transition">
+                🏫 Admin Unit
+              </router-link>
+            </div>
           </nav>
 
-          <!-- User Profile & Logout -->
-          <div class="flex items-center space-x-4">
-            <div class="text-right hidden sm:block">
-              <p class="text-sm font-semibold">{{ authStore.userName }}</p>
-              <span class="inline-block bg-blue-900 text-yellow-300 text-xs px-2 py-0.5 rounded-full uppercase tracking-wider font-bold">
-                {{ authStore.user?.role }}
-              </span>
+          <!-- User & Logout -->
+          <div class="flex items-center gap-3 border-l border-blue-600 pl-4">
+            <div class="text-sm text-right hidden sm:block">
+              <p class="font-semibold">{{ authStore.user?.name }}</p>
+              <p class="text-xs text-blue-200 uppercase tracking-wider">
+                {{ authStore.user?.role === 'admin' ? '👑 Admin' : '👤 User' }}
+              </p>
             </div>
-            <button @click="handleLogout" class="bg-red-600 hover:bg-red-700 text-white text-xs px-3 py-2 rounded-md font-medium transition">
-              Keluar
+            <button @click="logout" class="px-3 py-2 rounded-lg text-sm font-semibold bg-red-600 hover:bg-red-700 transition">
+              🚪 Keluar
             </button>
           </div>
         </div>
-      </div>
 
-      <!-- Mobile Bottom Navigation -->
-      <div class="md:hidden bg-blue-900 border-t border-blue-700 flex justify-around py-2 text-xs">
-        <router-link to="/" class="flex flex-col items-center text-blue-200" active-class="text-yellow-300 font-bold">
-          <span>🏠</span>
-          <span>Beranda</span>
-        </router-link>
-        <router-link to="/vehicles" class="flex flex-col items-center text-blue-200" active-class="text-yellow-300 font-bold">
-          <span>🚐</span>
-          <span>Kendaraan</span>
-        </router-link>
-        <router-link to="/facilities" class="flex flex-col items-center text-blue-200" active-class="text-yellow-300 font-bold">
-          <span>🏛️</span>
-          <span>Fasilitas</span>
-        </router-link>
-        <router-link to="/bookings" class="flex flex-col items-center text-blue-200" active-class="text-yellow-300 font-bold">
-          <span>📋</span>
-          <span>Riwayat</span>
-        </router-link>
-      </div>
-    </header>
+        <!-- Mobile Admin Links -->
+        <div v-if="authStore.isAdmin" class="md:hidden bg-blue-900 px-4 py-2 flex gap-2 flex-wrap">
+          <router-link to="/admin" class="px-3 py-1 rounded text-xs font-bold bg-yellow-500 text-blue-900 hover:bg-yellow-400">
+            👑 Super Admin
+          </router-link>
+          <router-link to="/admin/unit" class="px-3 py-1 rounded text-xs font-bold bg-green-500 text-white hover:bg-green-600">
+            🏫 Admin Unit
+          </router-link>
+        </div>
+      </header>
 
-    <!-- Main Content -->
-    <main class="flex-grow max-w-7xl w-full mx-auto p-4 sm:p-6 lg:p-8">
-      <router-view></router-view>
-    </main>
+      <!-- Page Content -->
+      <main class="flex-1 max-w-7xl w-full mx-auto px-4 py-8">
+        <router-view />
+      </main>
 
-    <!-- Footer -->
-    <footer class="bg-white border-t py-4 text-center text-xs text-gray-500">
-      &copy; 2026 Yayasan Pangudi Luhur Deltamas. All rights reserved.
-    </footer>
+      <!-- Footer -->
+      <footer class="bg-gray-900 text-gray-400 text-center py-4 text-xs mt-8">
+        <p>© 2026 Sekolah Pangudi Luhur Deltamas. Aplikasi PWA Peminjaman Fasilitas.</p>
+      </footer>
+    </template>
+
+    <!-- Auth Pages (No Navbar) - Guest Only -->
+    <template v-else>
+      <router-view />
+    </template>
   </div>
 </template>
 
@@ -78,8 +89,8 @@ import { useRouter } from 'vue-router'
 const authStore = useAuthStore()
 const router = useRouter()
 
-const handleLogout = async () => {
+const logout = async () => {
   await authStore.logout()
-  router.push('/login')
+  router.push({ name: 'Login' })
 }
 </script>
