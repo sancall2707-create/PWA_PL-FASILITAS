@@ -36,17 +36,20 @@
     <script>
       let deferredPrompt;
 
-      // Register Service Worker
+      // Register Service Worker IMMEDIATELY (not waiting for load event)
       if ('serviceWorker' in navigator) {
-        window.addEventListener('load', () => {
-          navigator.serviceWorker.register('/sw.js')
-            .then((registration) => {
-              console.log('✅ ServiceWorker registered with scope:', registration.scope);
-            })
-            .catch((error) => {
-              console.error('❌ ServiceWorker registration failed:', error);
-            });
-        });
+        // Cache busting: append version query to sw.js
+        const swVersion = '1';
+        navigator.serviceWorker.register(`/sw.js?v=${swVersion}`)
+          .then((registration) => {
+            console.log('✅ ServiceWorker registered with scope:', registration.scope);
+            
+            // Check for updates every time page loads
+            registration.update().catch(err => console.warn('SW update check failed:', err));
+          })
+          .catch((error) => {
+            console.error('❌ ServiceWorker registration failed:', error);
+          });
       }
 
       // Capture install prompt event for "Add to Home Screen"
