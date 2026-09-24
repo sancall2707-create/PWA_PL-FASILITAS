@@ -8,27 +8,32 @@ use App\Models\User;
 use App\Models\Vehicle;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Str;
 
 class DatabaseSeeder extends Seeder
 {
     public function run(): void
     {
-        // 1. Users
+        // 1. Users - SECURE: Use env vars for passwords, generate random if not set
+        // Admin
+        $adminPass = env('ADMIN_DEFAULT_PASSWORD') ?? Str::random(16);
         User::firstOrCreate(
             ['email' => 'admin@pangudiluhur.sch.id'],
             [
                 'name' => 'Administrator Sekolah',
-                'password' => Hash::make('admin123'),
+                'password' => Hash::make($adminPass),
                 'role' => 'admin',
                 'phone_number' => '081234567890',
             ]
         );
 
+        // User
+        $userPass = env('USER_DEFAULT_PASSWORD') ?? Str::random(16);
         User::firstOrCreate(
             ['email' => 'user@pangudiluhur.sch.id'],
             [
                 'name' => 'Sandi (Guru Informatika)',
-                'password' => Hash::make('user123'),
+                'password' => Hash::make($userPass),
                 'role' => 'user',
                 'phone_number' => '089876543210',
             ]
@@ -62,6 +67,18 @@ class DatabaseSeeder extends Seeder
 
         foreach ($facilities as $f) {
             Facility::firstOrCreate(['name' => $f['name']], $f);
+        }
+
+        // 5. Vehicle Unit Names (Update from seeder)
+        $vehicleUpdates = [
+            ['name' => 'Motor 01', 'new_name' => 'Motor Tosa', 'new_plate' => 'TOSA-01'],
+            ['name' => 'Motor 02', 'new_name' => 'Motor Supra', 'new_plate' => 'SUPRA-02'],
+        ];
+        foreach ($vehicleUpdates as $vu) {
+            Vehicle::where('name', $vu['name'])->update([
+                'name' => $vu['new_name'],
+                'plate_number' => $vu['new_plate'],
+            ]);
         }
     }
 }
